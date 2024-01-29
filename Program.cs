@@ -6,8 +6,10 @@ internal class Program
     static void Main()
     {
         APIAlphaVantage alphaVantage = new APIAlphaVantage();
+        EmailNotification emailNotification = new EmailNotification();
 
         alphaVantage.APIcall();
+        emailNotification.Notification();
     }
 }
 
@@ -47,5 +49,33 @@ class APIAlphaVantage : APISystem
                 Console.WriteLine($"Erro: {requisition.StatusCode}");
             }
         }
+    }
+}
+
+abstract class NotificationSystem
+{
+    public abstract void Notification();
+}
+
+class EmailNotification : NotificationSystem
+{
+    public override void Notification()
+    {
+        string sender = "";
+        string recipient = "";
+        string password = "";
+
+        // Mensagem do e-mail
+        MailMessage message = new MailMessage(sender, recipient, "teste", "testando");
+
+        // Configurações do cliente SMTP
+        SmtpClient client = new SmtpClient("smtp-mail.outlook.com");
+        client.Port = 587;
+        client.Credentials = new NetworkCredential(sender, password);
+        client.EnableSsl = true;
+
+        // Envia o e-mail
+        client.Send(message);
+        Console.WriteLine("E-mail enviado.");
     }
 }
