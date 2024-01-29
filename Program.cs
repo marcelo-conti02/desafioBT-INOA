@@ -24,11 +24,11 @@ class StockQuoteAlert(APISystem api, NotificationSystem notification)
             price = api.CheckPrice();
             if(price > max)
             {
-                notification.Notification();
+                notification.Notification("sell");
             }
             else if(price < min)
             {
-                notification.Notification();
+                notification.Notification("buy");
             }
         }
     }
@@ -75,19 +75,27 @@ class APIAlphaVantage : APISystem
 
 abstract class NotificationSystem
 {
-    public abstract void Notification();
+    public abstract void Notification(string warning);
 }
 
 class EmailNotification : NotificationSystem
 {
-    public override void Notification()
+    public override void Notification(string warning)
     {
         string sender = "";
         string recipient = "";
         string password = "";
+        MailMessage message;
 
         // Mensagem do e-mail
-        MailMessage message = new MailMessage(sender, recipient, "teste", "testando");
+        if(warning == "sell")
+        {
+            message = new MailMessage(sender, recipient, "Cotação do ativo da B3", "Prezados, a cotação do ativo está acima do nível de referência para venda. Recomendo a venda.");
+        }
+        else
+        {
+            message = new MailMessage(sender, recipient, "Cotação do ativo da B3", "Prezados, a cotação do ativo está acima do nível de referência para compra. Recomendo a compra.");
+        }
 
         // Configurações do cliente SMTP
         SmtpClient client = new SmtpClient("smtp-mail.outlook.com");
