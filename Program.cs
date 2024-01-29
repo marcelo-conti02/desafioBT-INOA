@@ -8,25 +8,46 @@ internal class Program
         APIAlphaVantage alphaVantage = new APIAlphaVantage();
         EmailNotification emailNotification = new EmailNotification();
 
-        alphaVantage.APIcall();
-        emailNotification.Notification();
+        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(alphaVantage, emailNotification);
+        stockQuoteAlert.Alert();
+    }
+}
+
+class StockQuoteAlert(APISystem api, NotificationSystem notification)
+{
+    bool loop = true;
+    float price;
+    public void Alert()
+    {
+        // Loop para verificar o ativo e tomar uma decisão
+        while(loop){
+            price = api.CheckPrice();
+            if(price > max)
+            {
+                notification.Notification();
+            }
+            else if(price < min)
+            {
+                notification.Notification();
+            }
+        }
     }
 }
 
 abstract class APISystem
 {
-    public abstract void APIcall();
+    public abstract void CheckPrice();
 }
 
 class APIAlphaVantage : APISystem
 {
-    public override void APIcall()
+    public override void CheckPrice()
     {
         // Aguarda a conclusão da chamada à API
-        Call().Wait();
+        CallAPI().Wait();
     }
 
-    private static async Task Call()
+    private static async Task CallAPI()
     {
         // Chave de acesso da API e ativo da B3 para ser monitorado
         string apiKey = "";
