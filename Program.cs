@@ -1,32 +1,41 @@
-﻿using System.Net;
+﻿using System.Globalization;
+using System.Net;
 using System.Net.Mail;
 
 internal class Program
 {
-    static void Main()
+    static void Main(string[] args)
     {
+        // Verifica se o número de parâmetros está correto
+        if (args.Length != 3)
+        {
+            Console.WriteLine("Número incorreto de parametros.");
+            return;
+        }
+
         APIAlphaVantage alphaVantage = new APIAlphaVantage();
         EmailNotification emailNotification = new EmailNotification();
 
-        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(alphaVantage, emailNotification);
+        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(alphaVantage, emailNotification, args[0], double.Parse(args[1], CultureInfo.InvariantCulture), double.Parse(args[2], CultureInfo.InvariantCulture));
         stockQuoteAlert.Alert();
     }
 }
 
-class StockQuoteAlert(APISystem api, NotificationSystem notification)
+class StockQuoteAlert(APISystem api, NotificationSystem notification, string asset, double minPrice, double maxPrice)
 {
     bool loop = true;
-    float price;
+    double price;
     public void Alert()
     {
         // Loop para verificar o ativo e tomar uma decisão
-        while(loop){
-            price = api.CheckPrice();
-            if(price > max)
+        while(loop)
+        {
+        price = api.CheckPrice(asset);
+            if(price > maxPrice)
             {
                 notification.Notification("sell");
             }
-            else if(price < min)
+            else if(price < minPrice)
             {
                 notification.Notification("buy");
             }
@@ -36,22 +45,22 @@ class StockQuoteAlert(APISystem api, NotificationSystem notification)
 
 abstract class APISystem
 {
-    public abstract void CheckPrice();
+    public abstract double CheckPrice(string asset);
 }
 
 class APIAlphaVantage : APISystem
 {
-    public override void CheckPrice()
+    public override double CheckPrice(string asset)
     {
         // Aguarda a conclusão da chamada à API
-        CallAPI().Wait();
+        CallAPI(asset).Wait();
+        return 40.4;
     }
 
-    private static async Task CallAPI()
+    private static async Task CallAPI(string asset)
     {
-        // Chave de acesso da API e ativo da B3 para ser monitorado
+        // Chave de acesso da API
         string apiKey = "";
-        string asset = "AAPL";
 
         string apiUrl = $"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={asset}&interval=1min&apikey={apiKey}";
 
@@ -94,9 +103,9 @@ class EmailNotification : NotificationSystem
         }
         else
         {
-            message = new MailMessage(sender, recipient, "Cotação do ativo da B3", "Prezados, a cotação do ativo está acima do nível de referência para compra. Recomendo a compra.");
+            message = new MailMessage(sender, recipient, "Cotação do ativo da B3", "Prezados, a cotação do ativo está abaixo do nível de referência para compra. Recomendo a compra.");
         }
-
+   
         // Configurações do cliente SMTP
         SmtpClient client = new SmtpClient("smtp-mail.outlook.com");
         client.Port = 587;
