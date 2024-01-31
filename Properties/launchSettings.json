@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "desafioBT-INOA": {
+      "commandName": "Project",
+      "commandLineArgs": "AAPL 20.5 187.38"
+    }
+  }
+}
