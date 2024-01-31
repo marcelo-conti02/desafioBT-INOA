@@ -1,6 +1,9 @@
 ﻿using System.Globalization;
 using System.Net;
 using System.Net.Mail;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
+
 
 internal class Program
 {
@@ -15,7 +18,6 @@ internal class Program
 
         APIAlphaVantage alphaVantage = new APIAlphaVantage();
         EmailNotification emailNotification = new EmailNotification();
-
         StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(alphaVantage, emailNotification, args[0], double.Parse(args[1], CultureInfo.InvariantCulture), double.Parse(args[2], CultureInfo.InvariantCulture));
         stockQuoteAlert.Alert();
     }
@@ -23,15 +25,15 @@ internal class Program
 
 class StockQuoteAlert(APISystem api, NotificationSystem notification, string asset, double minPrice, double maxPrice)
 {
-    bool loop = true;
-    double price;
     public void Alert()
     {
         // Loop para verificar o ativo e tomar uma decisão
-        while(loop)
+        while(true)
         {
-        price = api.CheckPrice(asset);
-            if(price > maxPrice)
+            // price = 
+            api.CheckPrice(asset);
+
+            if (price > maxPrice)
             {
                 notification.Notification("sell");
             }
@@ -45,23 +47,24 @@ class StockQuoteAlert(APISystem api, NotificationSystem notification, string ass
 
 abstract class APISystem
 {
-    public abstract double CheckPrice(string asset);
+    public abstract void CheckPrice(string asset);
 }
 
 class APIAlphaVantage : APISystem
 {
-    public override double CheckPrice(string asset)
+    public override void CheckPrice(string asset)
     {
         // Aguarda a conclusão da chamada à API
         CallAPI(asset).Wait();
-        return 40.4;
+
+        // Retorna o valor da cotação 
+        //return price;
     }
 
     private static async Task CallAPI(string asset)
     {
         // Chave de acesso da API
         string apiKey = "";
-
         string apiUrl = $"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={asset}&interval=1min&apikey={apiKey}";
 
         using (HttpClient client = new HttpClient())
@@ -71,8 +74,25 @@ class APIAlphaVantage : APISystem
 
             if (requisition.IsSuccessStatusCode)
             {
-                string reqResponse = await requisition.Content.ReadAsStringAsync();
-                Console.WriteLine(reqResponse);
+                // Lê a resposta 
+                string apiResponse = await requisition.Content.ReadAsStringAsync();
+
+                // JSON para objeto
+                var data = JsonConvert.DeserializeObject<JObject>(apiResponse);
+
+                // Separa os dados da chave Time Series
+                var timeSeries = data["Time Series (1min)"] as JObject;
+
+                // Dados mais recentes do Time Series
+                var recentData = timeSeries.First.First;
+
+                // Armazena a cotação do ativo
+                var price = recentData["4. close"].ToString();
+                double.Parse(price);
+                
+                //Retorna a cotação
+                // return price
+
             }
             else
             {
