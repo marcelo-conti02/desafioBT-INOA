@@ -2,7 +2,5 @@
     "emailSender": "",
     "emailRecipient": "",
     "emailPassword": "",
-    "smtpClient": "smtp-mail.outlook.com",
-    "apiKeyBrapi": "",
-    "apiKeyAlpha": ""
+    "smtpClient": "smtp-mail.outlook.com"
 }
