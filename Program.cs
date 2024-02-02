@@ -31,14 +31,8 @@ internal class Program
 
         APIBrapi apiBrapi = new APIBrapi();
         EmailNotification emailNotification = new EmailNotification();
-        StockQuoteAlert stockQuoteAlert = 
-            new StockQuoteAlert(
-                apiBrapi, 
-                emailNotification, 
-                args[0], 
-                minPrice, 
-                maxPrice
-                );
+        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(apiBrapi, emailNotification, args[0], minPrice, maxPrice);
+
         stockQuoteAlert.Alert().Wait();
     }
 }
