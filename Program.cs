@@ -1,12 +1,9 @@
 ﻿using System.Globalization;
 using System.Net;
 using System.Net.Mail;
-using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-
-
-
+using Microsoft.Extensions.Configuration;
 
 internal class Program
 {
@@ -19,51 +16,66 @@ internal class Program
             return;
         }
 
+        // Adiciona um arquivo JSON de configuração
+        IConfigurationBuilder builder = new ConfigurationBuilder().AddJsonFile("C:\\Users\\marce\\source\\repos\\desafioBT-INOA\\configuration.json");
+        IConfigurationRoot configuration = builder.Build();
+
         APIBrapi apiBrapi = new APIBrapi();
         EmailNotification emailNotification = new EmailNotification();
-        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(apiBrapi, emailNotification, args[0], double.Parse(args[1], CultureInfo.InvariantCulture), double.Parse(args[2], CultureInfo.InvariantCulture));
+        StockQuoteAlert stockQuoteAlert = 
+            new StockQuoteAlert(
+                apiBrapi, 
+                emailNotification, 
+                args[0], 
+                double.Parse(args[1], CultureInfo.InvariantCulture), 
+                double.Parse(args[2], CultureInfo.InvariantCulture), 
+                configuration
+                );
         stockQuoteAlert.Alert().Wait();
     }
 }
 
-class StockQuoteAlert(APISystem api, NotificationSystem notification, string asset, double minPrice, double maxPrice)
+class StockQuoteAlert(APISystem api, NotificationSystem notification, string asset, double minPrice, double maxPrice, IConfigurationRoot configuration)
 {
     double price;
     public async Task Alert()
     {
-        //while(true)
-        //{
-        price = await api.CheckPrice(asset);
-        Console.WriteLine(price);
-        if (price > maxPrice)
+        while(true)
         {
-            notification.Notification("sell");
+            price = await api.CheckPrice(asset, configuration);
+            Console.WriteLine(price);
+            if (price > maxPrice)
+            {
+                notification.Notification("sell", configuration);
+            }
+            else if(price < minPrice)
+            {
+                notification.Notification("buy", configuration);
+            }
+
+            // Aguarda 30s para fazer uma nova requisição
+            await Task.Delay(30000);
         }
-        else if(price < minPrice)
-        {
-            notification.Notification("buy");
-        }
-        //}
     }
 }
 
 abstract class APISystem
 {
-    public abstract Task<double> CheckPrice(string asset);
+    public abstract Task<double> CheckPrice(string asset, IConfigurationRoot configuration);
 }
 
 class APIBrapi : APISystem
 {
 
-    public override async Task<double> CheckPrice(string asset)
+    public override async Task<double> CheckPrice(string asset, IConfigurationRoot configuration)
     {
-        double price = await CallAPI(asset);
+        double price = await CallAPI(asset, configuration);
         return price;
     }
 
-    private static async Task<double> CallAPI(string asset)
+    private static async Task<double> CallAPI(string asset, IConfigurationRoot configuration)
     {
-        string apiKey = "";
+        string apiKey = configuration["apiKeyBrapi"];
         string apiUrl = $"https://brapi.dev/api/quote/{asset}?token={apiKey}";
 
         using (HttpClient client = new HttpClient())
@@ -93,15 +105,15 @@ class APIBrapi : APISystem
 
 class APIAlphaVantage : APISystem
 {
-    public override async Task<double> CheckPrice(string asset)
+    public override async Task<double> CheckPrice(string asset, IConfigurationRoot configuration)
     {
-        double price = await CallAPI(asset);
+        double price = await CallAPI(asset, configuration);
         return price;
     }
 
-    private static async Task<double> CallAPI(string asset)
+    private static async Task<double> CallAPI(string asset, IConfigurationRoot configuration)
     {
-        string apiKey = "";
+        string apiKey = configuration["apiKeyAlpha"];
         string apiUrl = $"https://www.alphavantage.co/query?function=TIME_SERIES_INTRADAY&symbol={asset}&interval=1min&apikey={apiKey}";
 
         using (HttpClient client = new HttpClient())
@@ -133,17 +145,17 @@ class APIAlphaVantage : APISystem
 
 abstract class NotificationSystem
 {
-    public abstract void Notification(string warning);
+    public abstract void Notification(string warning, IConfigurationRoot configuration);
 }
 
 class EmailNotification : NotificationSystem
 {
-    public override void Notification(string warning)
+    public override void Notification(string warning, IConfigurationRoot configuration)
     {
-        string sender = "";
-        string recipient = "";
-        string password = "";
-        string stmpClient = "smtp-mail.outlook.com";
+        string sender = configuration["emailSender"];
+        string recipient = configuration["emailRecipient"];
+        string password = configuration["emailPassword"];
+        string smtpClient = configuration["smtpClient"];
         MailMessage message;
 
         if(warning == "sell")
@@ -155,7 +167,7 @@ class EmailNotification : NotificationSystem
             message = new MailMessage(sender, recipient, "Cotação do ativo da B3", "Prezados, a cotação do ativo está abaixo do nível de referência para compra. Recomendo a compra.");
         }
 
-        SmtpClient client = new SmtpClient(stmpClient);
+        SmtpClient client = new SmtpClient(smtpClient);
         client.Port = 587;
         client.Credentials = new NetworkCredential(sender, password);
         client.EnableSsl = true;
