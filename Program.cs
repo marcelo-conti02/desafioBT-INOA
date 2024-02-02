@@ -1,8 +1,10 @@
 ﻿using System.Globalization;
 using System.Net;
 using System.Net.Mail;
+using System.Runtime.CompilerServices;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
+
 
 
 
@@ -16,10 +18,10 @@ internal class Program
             Console.WriteLine("Número incorreto de parametros.");
             return;
         }
-   
-        APIAlphaVantage alphaVantage = new APIAlphaVantage();
+
+        APIBrapi apiBrapi = new APIBrapi();
         EmailNotification emailNotification = new EmailNotification();
-        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(alphaVantage, emailNotification, args[0], double.Parse(args[1], CultureInfo.InvariantCulture), double.Parse(args[2], CultureInfo.InvariantCulture));
+        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(apiBrapi, emailNotification, args[0], double.Parse(args[1], CultureInfo.InvariantCulture), double.Parse(args[2], CultureInfo.InvariantCulture));
         stockQuoteAlert.Alert().Wait();
     }
 }
@@ -31,18 +33,16 @@ class StockQuoteAlert(APISystem api, NotificationSystem notification, string ass
     {
         //while(true)
         //{
-            price = await api.CheckPrice(asset);
-
-            Console.WriteLine(price);
-
-            if (price > maxPrice)
-            {
-                notification.Notification("sell");
-            }
-            else if(price < minPrice)
-            {
-                notification.Notification("buy");
-            }
+        price = await api.CheckPrice(asset);
+        Console.WriteLine(price);
+        if (price > maxPrice)
+        {
+            notification.Notification("sell");
+        }
+        else if(price < minPrice)
+        {
+            notification.Notification("buy");
+        }
         //}
     }
 }
@@ -50,6 +50,45 @@ class StockQuoteAlert(APISystem api, NotificationSystem notification, string ass
 abstract class APISystem
 {
     public abstract Task<double> CheckPrice(string asset);
+}
+
+class APIBrapi : APISystem
+{
+
+    public override async Task<double> CheckPrice(string asset)
+    {
+        double price = await CallAPI(asset);
+        return price;
+    }
+
+    private static async Task<double> CallAPI(string asset)
+    {
+        string apiKey = "";
+        string apiUrl = $"https://brapi.dev/api/quote/{asset}?token={apiKey}";
+
+        using (HttpClient client = new HttpClient())
+        {
+            HttpResponseMessage requisition = await client.GetAsync(apiUrl);
+
+            if (requisition is { StatusCode: HttpStatusCode.OK })
+            {
+                string apiResponse = await requisition.Content.ReadAsStringAsync();
+                JObject jsonObject = JObject.Parse(apiResponse);
+
+                // Obtem a cotação do ativo no JObject
+                var jsonData = jsonObject["results"][0]["regularMarketPrice"];
+                var price = jsonData.ToString();
+
+                return double.Parse(price);
+            }
+            else
+            {
+                Console.WriteLine("Erro na chamada à API.");
+                Environment.Exit(1);
+                return -1;
+            }
+        }
+    }
 }
 
 class APIAlphaVantage : APISystem
@@ -68,8 +107,8 @@ class APIAlphaVantage : APISystem
         using (HttpClient client = new HttpClient())
         {
             HttpResponseMessage requisition = await client.GetAsync(apiUrl);
-          
-            if (requisition.IsSuccessStatusCode)
+            
+            if (requisition is { StatusCode: HttpStatusCode.OK })
             {
                 string apiResponse = await requisition.Content.ReadAsStringAsync();
                 var data = JsonConvert.DeserializeObject<JObject>(apiResponse);
@@ -83,8 +122,9 @@ class APIAlphaVantage : APISystem
                 return double.Parse(price, CultureInfo.InvariantCulture);
             }
             else
-            { 
-                Console.WriteLine($"Erro: {requisition.StatusCode}");
+            {
+                Console.WriteLine("Erro na chamada à API.");
+                Environment.Exit(1);
                 return -1;
             }
         }

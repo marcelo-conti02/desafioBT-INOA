@@ -2,7 +2,7 @@
   "profiles": {
     "desafioBT-INOA": {
       "commandName": "Project",
-      "commandLineArgs": "AAPL 20.5 187.38"
+      "commandLineArgs": "PETR4 20.50 41.5"
     }
   }
 }
