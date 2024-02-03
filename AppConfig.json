@@ -2,5 +2,7 @@
     "emailSender": "",
     "emailRecipient": "",
     "emailPassword": "",
-    "smtpClient": "smtp-mail.outlook.com"
+    "smtpClient": "",
+    "apiKey": "",
+    "delay": ""
 }

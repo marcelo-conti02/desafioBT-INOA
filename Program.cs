@@ -1,4 +1,5 @@
 ﻿using System.Globalization;
+using Microsoft.Extensions.Configuration;
 
 internal class Program
 {
@@ -17,21 +18,25 @@ internal class Program
             bool sucessMin = double.TryParse(args[1], CultureInfo.InvariantCulture, out minPrice);
             bool sucessMax = double.TryParse(args[2], CultureInfo.InvariantCulture, out maxPrice);
 
-            if(!sucessMin || !sucessMax)
+            if (!sucessMin || !sucessMax)
             {
                 Console.WriteLine("Valores de referência precisam ser números.");
                 return;
             }
-            else if(minPrice >= maxPrice)
+            else if (minPrice >= maxPrice)
             {
                 Console.WriteLine("Valor de referência para compra precisa ser menor que o de venda.");
                 return;
             }
         }
 
-        APIBrapi apiBrapi = new APIBrapi();
-        EmailNotification emailNotification = new EmailNotification();
-        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(apiBrapi, emailNotification, args[0], minPrice, maxPrice);
+        string asset = args[0];
+        IConfigurationBuilder builder = new ConfigurationBuilder().AddJsonFile("C:\\Users\\marce\\source\\repos\\desafioBT-INOA\\AppConfig.json");
+        IConfigurationRoot appConfig = builder.Build();
+
+        APIBrapi apiBrapi = new APIBrapi(appConfig["apiKey"]);
+        EmailNotification emailNotification = new EmailNotification(appConfig["emailSender"], appConfig["emailRecipient"], appConfig["emailPassword"], appConfig["smtpClient"]);
+        StockQuoteAlert stockQuoteAlert = new StockQuoteAlert(apiBrapi, emailNotification, asset, minPrice, maxPrice, int.Parse(appConfig["delay"]));
 
         stockQuoteAlert.Alert().Wait();
     }

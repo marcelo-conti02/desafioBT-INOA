@@ -1,6 +1,6 @@
-﻿class StockQuoteAlert(APISystem api, NotificationSystem notification, string asset, double minPrice, double maxPrice)
+﻿class StockQuoteAlert(APISystem api, NotificationSystem notification, string asset, double minPrice, double maxPrice, int delay)
 {
-    public async Task Alert() 
+    public async Task Alert()
     {
         double price;
 
@@ -11,7 +11,7 @@
         while (true)
         {
             price = await api.CheckPrice(asset);
-            Console.WriteLine($"Cotação ativo {asset}: {price}");
+            Console.WriteLine($"Cotação do ativo {asset}: {price}");
 
             if (price > maxPrice)
             {
@@ -22,8 +22,8 @@
                 notification.Notify(subject, buyMessage);
             }
 
-            // Aguarda 30s para fazer uma nova requisição
-            await Task.Delay(30000);
+            // Aguarda para fazer uma nova requisição
+            await Task.Delay(delay);
         }
     }
 }
