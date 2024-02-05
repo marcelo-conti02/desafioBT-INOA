@@ -1,12 +1,12 @@
 ﻿class StockQuoteAlert(APISystem api, NotificationSystem notification, string asset, double minPrice, double maxPrice, int delay)
 {
+    string subject = "Cotação do ativo da B3";
+    string sellMessage = $"Prezado, a cotação do ativo {asset} está acima do nível de referência para a venda. Recomendo a venda.";
+    string buyMessage = $"Prezado, a cotação do ativo {asset} está abaixo do nível de referência para a compra. Recomendo a compra.";
+
     public async Task Alert()
     {
         double price;
-
-        string subject = "Cotação do ativo da B3";
-        string sellMessage = $"Prezados, a cotação do ativo {asset} está acima do nível de referência para a venda. Recomendo a venda.";
-        string buyMessage = $"Prezados, a cotação do ativo {asset} está abaixo do nível de referência para a compra. Recomendo a compra.";
 
         while (true)
         {
@@ -23,7 +23,7 @@
             }
 
             // Aguarda para fazer uma nova requisição
-            await Task.Delay(delay);
+            await Task.Delay(delay * 1000);
         }
     }
 }

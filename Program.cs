@@ -15,8 +15,8 @@ internal class Program
         }
         else
         {
-            bool sucessMin = double.TryParse(args[1], CultureInfo.InvariantCulture, out minPrice);
-            bool sucessMax = double.TryParse(args[2], CultureInfo.InvariantCulture, out maxPrice);
+            bool sucessMin = double.TryParse(args[1], CultureInfo.InvariantCulture, out maxPrice);
+            bool sucessMax = double.TryParse(args[2], CultureInfo.InvariantCulture, out minPrice);
 
             if (!sucessMin || !sucessMax)
             {
@@ -31,6 +31,7 @@ internal class Program
         }
 
         string asset = args[0];
+
         IConfigurationBuilder builder = new ConfigurationBuilder().AddJsonFile("C:\\Users\\marce\\source\\repos\\desafioBT-INOA\\AppConfig.json");
         IConfigurationRoot appConfig = builder.Build();
 
